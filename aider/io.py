@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from io import StringIO
 from pathlib import Path
+from functools import wraps
 
 from prompt_toolkit.completion import Completer, Completion, ThreadedCompleter
 from prompt_toolkit.cursor_shapes import ModalCursorShapeConfig
@@ -662,6 +663,17 @@ class InputOutput:
             return True
         return False
 
+    def preserve_multiline(f):
+        @wraps(f)
+        def wrapper(self, *args, **kwargs):
+            orig = self.multiline_mode
+            try:
+                return f(self, *args, **kwargs)
+            finally:
+                self.multiline_mode = orig
+        return wrapper
+
+    @preserve_multiline
     def confirm_ask(
         self,
         question,
@@ -782,6 +794,7 @@ class InputOutput:
 
         return is_yes
 
+    @preserve_multiline
     def prompt_ask(self, question, default="", subject=None):
         # Temporarily disable multiline mode for prompts
         orig_multiline = self.multiline_mode
